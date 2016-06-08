@@ -1,5 +1,7 @@
 /app/config/parameters.yml
+/app/var/
 /bin/
+!/bin/console
 /build/
 /composer.phar
 /vendor/
