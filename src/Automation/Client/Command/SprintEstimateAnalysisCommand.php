@@ -88,10 +88,7 @@ class SprintEstimateAnalysisCommand extends ContainerAwareCommand
             $estimate = $issue->get('Original Estimate') / 3600;
             $times[$issue->getAssignee()['name']]['status'][$issue->getKey()] = $status;
             $times[$issue->getAssignee()['name']]['estimate'][$issue->getKey()] = $estimate;
-            $times[$issue->getAssignee()['name']]['finished'][$issue->getKey()] = in_array(
-                $status,
-                $this->finishedStatuses
-            ) ? $estimate : 0;
+            $times[$issue->getAssignee()['name']]['finished'][$issue->getKey()] = $issue->get('Remaining Estimate') / 3600;;
         }
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $output->writeln(sprintf('Got %d tasks with estimates for %d users', $count, count($times)));
@@ -109,7 +106,7 @@ class SprintEstimateAnalysisCommand extends ContainerAwareCommand
         foreach ($times as $user => $time) {
             $table->addRow(new TableSeparator());
             $estimate = array_sum($time['estimate']);
-            $remaining = $estimate - array_sum($time['finished']);
+            $remaining = /*$estimate - */array_sum($time['finished']);
             $row = [$user, $estimate, $remaining];
             $formula = implode("\n", $time['estimate']);
             $tasks = array_map(
