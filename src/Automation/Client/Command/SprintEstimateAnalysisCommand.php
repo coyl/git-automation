@@ -61,6 +61,8 @@ class SprintEstimateAnalysisCommand extends ContainerAwareCommand
             $query .= sprintf(' AND %s', $input->getOption('additionalDql'));
         }
 
+        $query .= " AND status NOT IN ('" . implode("','", $this->finishedStatuses) . "')";
+
         $query .= ' ORDER BY originalEstimate';
 
         return $query;
