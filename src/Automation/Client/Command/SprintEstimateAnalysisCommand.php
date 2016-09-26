@@ -87,10 +87,10 @@ class SprintEstimateAnalysisCommand extends ContainerAwareCommand
             }
             $count ++;
             $status = strtolower($issue->getStatus()['name']);
-            $estimate = $issue->get('Original Estimate') / 3600;
+            $estimate = round($issue->get('Original Estimate') / 3600, 2);
             $times[$issue->getAssignee()['name']]['status'][$issue->getKey()] = $status;
             $times[$issue->getAssignee()['name']]['estimate'][$issue->getKey()] = $estimate;
-            $times[$issue->getAssignee()['name']]['finished'][$issue->getKey()] = $issue->get('Remaining Estimate') / 3600;;
+            $times[$issue->getAssignee()['name']]['finished'][$issue->getKey()] = round($issue->get('Remaining Estimate') / 3600, 2);
         }
         if ($output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
             $output->writeln(sprintf('Got %d tasks with estimates for %d users', $count, count($times)));
