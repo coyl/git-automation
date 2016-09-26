@@ -89,6 +89,7 @@ class SprintEstimateAnalysisCommand extends ContainerAwareCommand
             $status = strtolower($issue->getStatus()['name']);
             $estimate = round($issue->get('Original Estimate') / 3600, 2);
             $times[$issue->getAssignee()['name']]['status'][$issue->getKey()] = $status;
+            $times[$issue->getAssignee()['name']]['flag'][$issue->getKey()] = $issue->get('Flagged');
             $times[$issue->getAssignee()['name']]['estimate'][$issue->getKey()] = $estimate;
             $times[$issue->getAssignee()['name']]['finished'][$issue->getKey()] = round($issue->get('Remaining Estimate') / 3600, 2);
         }
@@ -110,10 +111,11 @@ class SprintEstimateAnalysisCommand extends ContainerAwareCommand
             $estimate = array_sum($time['estimate']);
             $remaining = /*$estimate - */array_sum($time['finished']);
             $row = [$user, $estimate, $remaining];
-            $formula = implode("\n", $time['estimate']);
+            $formula = implode("\n", $time['finished']);
             $tasks = array_map(
                 function ($val) use ($time) {
-                    return empty($time['status'][$val]) ? $val : $val . ' ' . $time['status'][$val];
+                    $flag = $time['flag'][$val] ? '* ' : '- ';
+                    return $flag . (empty($time['status'][$val]) ? $val : $val . ' ' . $time['status'][$val]);
                 },
                 array_keys($time['estimate'])
             );
