@@ -1,6 +1,6 @@
 <?php
 
-namespace Automation\Command;
+namespace Automation\Client\Command;
 
 use Coyl\Git\GitRepo;
 use chobie\Jira\Issues\Walker;
@@ -20,13 +20,23 @@ class GitBranchesCleanByJiraCommand extends ContainerAwareCommand
         $this
             ->setName('git:branches:clean-by-jira')
             ->setDescription('Deletes local branches if task is closed in Jira')
-            ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force branch deletion');
-        $this->git = new GitRepo(dirname(\Phar::running(false) ?: __DIR__));
+            ->addOption('force', 'f', InputOption::VALUE_NONE, 'Force branch deletion')
+            ->addOption('remote', 'r', InputOption::VALUE_NONE, 'Remove remote branches as well');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $api = $this->getContainer()->get('git_automation.jira_api');
+        $this->git = new GitRepo(realpath('.'));
+        $api = $this->getContainer()->get('jira_api_rest_client');
+        $force = $remote = false;
+        if (!empty($input->getOption('force'))) {
+            $output->writeln('Force deletion enabled');
+            $force = true;
+        }
+        if (!empty($input->getOption('remote'))) {
+            $output->writeln('Remote branches deletion enabled');
+            $remote = true;
+        }
         $permanentBranches = ['dev', 'master', 'facebook'];
 
         $branches = $this->git->branches();
@@ -40,8 +50,10 @@ class GitBranchesCleanByJiraCommand extends ContainerAwareCommand
                     }
 
                     $val = preg_replace("/_.*/i", "", $val);
-                    if (strpos($val, '-') > 1 && strpos($val, '-') < (strlen($val) - 1))
+                    if (strpos($val, '-') > 1 && strpos($val, '-') < (strlen($val) - 1)) {
                         return $val;
+                    }
+
                     return false;
                 },
                 $branches
@@ -57,15 +69,19 @@ class GitBranchesCleanByJiraCommand extends ContainerAwareCommand
             $closedStatuses = ["approved", "awaiting for check", "closed (won't fix)", "closed success"];
             if (in_array(strtolower($issue->getStatus()['name']), $closedStatuses)) {
                 $output->writeln($issue->getKey() . ' is closed ');
-                $this->git->branchDelete($issue->getKey(), true);
-                $deleted[] = $issue->getKey();
+                try {
+                    $this->git->branchDelete($issue->getKey(), $force);
+                    $deleted[] = $issue->getKey();
+                } catch (\Exception $e) {
+                }
             } else {
                 $output->writeln($issue->getKey() . ' is ' . $issue->getStatus()['name']);
             }
 
         }
-        if (!empty($deleted))
+        if ($remote && !empty($deleted)) {
             $this->git->deleteRemoteBranches($deleted);
+        }
     }
 
 }
